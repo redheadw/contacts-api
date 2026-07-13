@@ -1,159 +1,161 @@
 const express = require("express");
-const { ObjectId } = require("mongodb");
-const { getDb } = require("../db/connect");
-
 const router = express.Router();
 
-/**
- * @swagger
- * /contacts:
- *   get:
- *     summary: Get all contacts
- *     responses:
- *       200:
- *         description: List of all contacts
- */
-router.get("/", async (req, res) => {
-  try {
-    const db = getDb();
-    const contacts = await db.collection("contacts").find().toArray();
-    res.status(200).json(contacts);
-  } catch (error) {
-    res.status(500).json({ message: "Error retrieving contacts" });
+const contactsController = require("../controllers/contacts");
+
+router.get("/", contactsController.getAll);
+/*
+  #swagger.tags = ["Contacts"]
+  #swagger.summary = "Get all contacts"
+  #swagger.description = "Returns every contact stored in the contacts collection."
+
+  #swagger.responses[200] = {
+    description: "Contacts retrieved successfully.",
+    schema: [{
+      $ref: "#/definitions/ContactResponse"
+    }]
   }
-});
 
-/**
- * @swagger
- * /contacts/{id}:
- *   get:
- *     summary: Get one contact by ID
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Single contact
- *       404:
- *         description: Contact not found
- */
-router.get("/:id", async (req, res) => {
-  try {
-    const db = getDb();
-    const id = req.params.id;
+  #swagger.responses[500] = {
+    description: "Server error."
+  }
+*/
 
-    const contact = await db.collection("contacts").findOne({
-      _id: new ObjectId(id),
-    });
+router.get("/:id", contactsController.getSingle);
+/*
+  #swagger.tags = ["Contacts"]
+  #swagger.summary = "Get a contact by ID"
+  #swagger.description = "Returns one contact using its MongoDB ObjectId."
 
-    if (!contact) {
-      return res.status(404).json({ message: "Contact not found" });
+  #swagger.parameters["id"] = {
+    in: "path",
+    description: "MongoDB ObjectId of the contact.",
+    required: true,
+    type: "string"
+  }
+
+  #swagger.responses[200] = {
+    description: "Contact retrieved successfully.",
+    schema: {
+      $ref: "#/definitions/ContactResponse"
     }
-
-    res.status(200).json(contact);
-  } catch (error) {
-    res.status(400).json({ message: "Invalid contact ID" });
   }
-});
 
-/**
- * @swagger
- * /contacts:
- *   post:
- *     summary: Create a new contact
- *     responses:
- *       201:
- *         description: Contact created
- */
-router.post("/", async (req, res) => {
-  try {
-    const db = getDb();
-
-    const newContact = {
-      firstName: req.body.firstName,
-      lastName: req.body.lastName,
-      email: req.body.email,
-      favoriteColor: req.body.favoriteColor,
-      birthday: req.body.birthday,
-    };
-
-    const result = await db.collection("contacts").insertOne(newContact);
-    res.status(201).json(result);
-  } catch (error) {
-    res.status(500).json({ message: "Error creating contact" });
+  #swagger.responses[400] = {
+    description: "Invalid contact ID."
   }
-});
 
-/**
- * @swagger
- * /contacts/{id}:
- *   put:
- *     summary: Update a contact
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       204:
- *         description: Contact updated
- */
-router.put("/:id", async (req, res) => {
-  try {
-    const db = getDb();
-    const id = req.params.id;
-
-    const updatedContact = {
-      firstName: req.body.firstName,
-      lastName: req.body.lastName,
-      email: req.body.email,
-      favoriteColor: req.body.favoriteColor,
-      birthday: req.body.birthday,
-    };
-
-    await db.collection("contacts").replaceOne(
-      { _id: new ObjectId(id) },
-      updatedContact
-    );
-
-    res.status(204).send();
-  } catch (error) {
-    res.status(400).json({ message: "Error updating contact" });
+  #swagger.responses[404] = {
+    description: "Contact not found."
   }
-});
 
-/**
- * @swagger
- * /contacts/{id}:
- *   delete:
- *     summary: Delete a contact
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Contact deleted
- */
-router.delete("/:id", async (req, res) => {
-  try {
-    const db = getDb();
-    const id = req.params.id;
-
-    await db.collection("contacts").deleteOne({
-      _id: new ObjectId(id),
-    });
-
-    res.status(200).json({ message: "Contact deleted" });
-  } catch (error) {
-    res.status(400).json({ message: "Error deleting contact" });
+  #swagger.responses[500] = {
+    description: "Server error."
   }
-});
+*/
+
+router.post("/", contactsController.createContact);
+/*
+  #swagger.tags = ["Contacts"]
+  #swagger.summary = "Create a new contact"
+  #swagger.description = "Creates a contact. All five contact fields are required."
+
+  #swagger.parameters["body"] = {
+    in: "body",
+    description: "Contact information.",
+    required: true,
+    schema: {
+      $ref: "#/definitions/ContactInput"
+    }
+  }
+
+  #swagger.responses[201] = {
+    description: "Contact created successfully.",
+    schema: {
+      message: "Contact created successfully.",
+      id: "64c285a87db761333e18d1d5"
+    }
+  }
+
+  #swagger.responses[400] = {
+    description: "One or more required fields are missing."
+  }
+
+  #swagger.responses[500] = {
+    description: "Server error."
+  }
+*/
+
+router.put("/:id", contactsController.updateContact);
+/*
+  #swagger.tags = ["Contacts"]
+  #swagger.summary = "Update a contact"
+  #swagger.description = "Updates the contact matching the supplied MongoDB ObjectId. All contact fields are required."
+
+  #swagger.parameters["id"] = {
+    in: "path",
+    description: "MongoDB ObjectId of the contact to update.",
+    required: true,
+    type: "string"
+  }
+
+  #swagger.parameters["body"] = {
+    in: "body",
+    description: "Updated contact information.",
+    required: true,
+    schema: {
+      $ref: "#/definitions/ContactInput"
+    }
+  }
+
+  #swagger.responses[204] = {
+    description: "Contact updated successfully."
+  }
+
+  #swagger.responses[400] = {
+    description: "Invalid ID or missing required fields."
+  }
+
+  #swagger.responses[404] = {
+    description: "Contact not found."
+  }
+
+  #swagger.responses[500] = {
+    description: "Server error."
+  }
+*/
+
+router.delete("/:id", contactsController.deleteContact);
+/*
+  #swagger.tags = ["Contacts"]
+  #swagger.summary = "Delete a contact"
+  #swagger.description = "Deletes the contact matching the supplied MongoDB ObjectId."
+
+  #swagger.parameters["id"] = {
+    in: "path",
+    description: "MongoDB ObjectId of the contact to delete.",
+    required: true,
+    type: "string"
+  }
+
+  #swagger.responses[200] = {
+    description: "Contact deleted successfully.",
+    schema: {
+      message: "Contact deleted successfully."
+    }
+  }
+
+  #swagger.responses[400] = {
+    description: "Invalid contact ID."
+  }
+
+  #swagger.responses[404] = {
+    description: "Contact not found."
+  }
+
+  #swagger.responses[500] = {
+    description: "Server error."
+  }
+*/
 
 module.exports = router;

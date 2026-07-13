@@ -1,35 +1,40 @@
-require("dotenv").config();
-
 const express = require("express");
+const dotenv = require("dotenv");
+const cors = require("cors");
 const swaggerUi = require("swagger-ui-express");
-const swaggerDocument = require("./swagger-output.json");
-const { connectDB } = require("./db/connect");
 
-const contactRoutes = require("./routes/contacts");
+dotenv.config();
+
+const mongodb = require("./db/connect");
+const contactsRoutes = require("./routes/contacts");
+const swaggerDocument = require("./swagger-output.json");
 
 const app = express();
+const port = process.env.PORT || 8080;
 
-// Parse JSON first
+app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Routes
-app.use("/contacts", contactRoutes);
-
-// Swagger
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-
-// Home
 app.get("/", (req, res) => {
-  res.send("Welcome to the Contacts API!");
+  res.status(200).send("Welcome to the Contacts API!");
 });
 
-// Start server
-connectDB()
+app.use("/contacts", contactsRoutes);
+
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerDocument)
+);
+mongodb
+  .initDb()
   .then(() => {
-    app.listen(process.env.PORT || 8080, () => {
-      console.log(`Server running on port ${process.env.PORT || 8080}`);
+    app.listen(port, () => {
+      console.log(`Server running on port ${port}`);
     });
   })
-  .catch((err) => {
-    console.error("Failed to connect to MongoDB:", err);
+  .catch((error) => {
+    console.error("Failed to connect to MongoDB:", error);
+    process.exit(1);
   });

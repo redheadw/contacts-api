@@ -1,0 +1,110 @@
+### Variables
+@localUrl = http://localhost:8080
+@renderUrl = https://contacts-api-52b9.onrender.com
+
+### Replace this after creating a contact
+@contactId = REPLACE_WITH_A_REAL_CONTACT_ID
+
+
+###############################################
+# LOCAL TESTS
+###############################################
+
+### Local home route
+GET {{localUrl}}/
+
+
+### Local get all contacts
+GET {{localUrl}}/contacts
+
+
+### Local get one contact
+GET {{localUrl}}/contacts/{{contactId}}
+
+
+### Local create contact
+POST {{localUrl}}/contacts
+Content-Type: application/json
+
+{
+  "firstName": "Laura",
+  "lastName": "Martinez",
+  "email": "laura.martinez@example.com",
+  "favoriteColor": "Purple",
+  "birthday": "1986-09-22"
+}
+
+
+### Local create contact - missing field test
+POST {{localUrl}}/contacts
+Content-Type: application/json
+
+{
+  "firstName": "Missing",
+  "lastName": "Email",
+  "favoriteColor": "Orange",
+  "birthday": "1990-01-01"
+}
+
+
+### Local update contact
+PUT {{localUrl}}/contacts/{{contactId}}
+Content-Type: application/json
+
+{
+  "firstName": "Laura",
+  "lastName": "Martinez",
+  "email": "laura.updated@example.com",
+  "favoriteColor": "Green",
+  "birthday": "1986-09-22"
+}
+
+
+### Local delete contact
+DELETE {{localUrl}}/contacts/{{contactId}}
+
+
+###############################################
+# PUBLISHED RENDER TESTS
+###############################################
+
+### Render home route
+GET {{renderUrl}}/
+
+
+### Render get all contacts
+GET {{renderUrl}}/contacts
+
+
+### Render get one contact
+GET {{renderUrl}}/contacts/{{contactId}}
+
+
+### Render create contact
+POST {{renderUrl}}/contacts
+Content-Type: application/json
+
+{
+  "firstName": "Daniel",
+  "lastName": "Wilson",
+  "email": "daniel.wilson@example.com",
+  "favoriteColor": "Red",
+  "birthday": "1992-03-12"
+}
+
+
+### Render update contact
+PUT {{renderUrl}}/contacts/{{contactId}}
+Content-Type: application/json
+
+{
+  "firstName": "Daniel",
+  "lastName": "Wilson",
+  "email": "daniel.updated@example.com",
+  "favoriteColor": "Yellow",
+  "birthday": "1992-03-12"
+}
+
+
+### Render delete contact
+DELETE {{renderUrl}}/contacts/{{contactId}}

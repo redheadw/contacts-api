@@ -1,118 +1,200 @@
-const { getDb } = require("../db/connect");
 const { ObjectId } = require("mongodb");
+const mongodb = require("../db/connect");
 
-// GET all contacts
-async function getAllContacts(req, res) {
+const validateContact = (contact) => {
+  const requiredFields = [
+    "firstName",
+    "lastName",
+    "email",
+    "favoriteColor",
+    "birthday"
+  ];
+
+  const missingFields = requiredFields.filter((field) => {
+    return (
+      contact[field] === undefined ||
+      contact[field] === null ||
+      String(contact[field]).trim() === ""
+    );
+  });
+
+  return missingFields;
+};
+
+const getAll = async (req, res) => {
   try {
-    const db = getDb();
-    const contacts = await db.collection("contacts").find().toArray();
+    const contacts = await mongodb
+      .getDb()
+      .collection("contacts")
+      .find()
+      .toArray();
 
-    res.status(200).json(contacts);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-}
+    return res.status(200).json(contacts);
+  } catch (error) {
+    console.error("Error retrieving contacts:", error);
 
-// GET one contact by ID
-async function getContactById(req, res) {
-  try {
-    const db = getDb();
-
-    const contact = await db.collection("contacts").findOne({
-      _id: new ObjectId(req.params.id),
+    return res.status(500).json({
+      error: "An error occurred while retrieving contacts."
     });
+  }
+};
+
+const getSingle = async (req, res) => {
+  try {
+    const contactId = req.params.id;
+
+    if (!ObjectId.isValid(contactId)) {
+      return res.status(400).json({
+        error: "Invalid contact ID."
+      });
+    }
+
+    const contact = await mongodb
+      .getDb()
+      .collection("contacts")
+      .findOne({ _id: new ObjectId(contactId) });
 
     if (!contact) {
       return res.status(404).json({
-        message: "Contact not found",
+        error: "Contact not found."
       });
     }
 
-    res.status(200).json(contact);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.status(200).json(contact);
+  } catch (error) {
+    console.error("Error retrieving contact:", error);
+
+    return res.status(500).json({
+      error: "An error occurred while retrieving the contact."
+    });
   }
-}
+};
 
-// POST create a new contact
-async function createContact(req, res) {
+const createContact = async (req, res) => {
   try {
-    const db = getDb();
-
-    const newContact = {
+    const contact = {
       firstName: req.body.firstName,
       lastName: req.body.lastName,
       email: req.body.email,
       favoriteColor: req.body.favoriteColor,
-      birthday: req.body.birthday,
+      birthday: req.body.birthday
     };
 
-    const result = await db.collection("contacts").insertOne(newContact);
+    const missingFields = validateContact(contact);
 
-    res.status(201).json({
-      message: "Contact created successfully",
-      id: result.insertedId,
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        error: "All contact fields are required.",
+        missingFields
+      });
+    }
+
+    const response = await mongodb
+      .getDb()
+      .collection("contacts")
+      .insertOne(contact);
+
+    return res.status(201).json({
+      message: "Contact created successfully.",
+      id: response.insertedId
     });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+  } catch (error) {
+    console.error("Error creating contact:", error);
+
+    return res.status(500).json({
+      error: "An error occurred while creating the contact."
+    });
   }
-}
+};
 
-// PUT update an existing contact
-async function updateContact(req, res) {
+const updateContact = async (req, res) => {
   try {
-    const db = getDb();
+    const contactId = req.params.id;
 
-    const updatedContact = {
+    if (!ObjectId.isValid(contactId)) {
+      return res.status(400).json({
+        error: "Invalid contact ID."
+      });
+    }
+
+    const contact = {
       firstName: req.body.firstName,
       lastName: req.body.lastName,
       email: req.body.email,
       favoriteColor: req.body.favoriteColor,
-      birthday: req.body.birthday,
+      birthday: req.body.birthday
     };
 
-    const result = await db.collection("contacts").replaceOne(
-      { _id: new ObjectId(req.params.id) },
-      updatedContact
-    );
+    const missingFields = validateContact(contact);
 
-    if (result.matchedCount === 0) {
-      return res.status(404).json({
-        message: "Contact not found",
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        error: "All contact fields are required.",
+        missingFields
       });
     }
 
-    res.status(204).send();
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-}
+    const response = await mongodb
+      .getDb()
+      .collection("contacts")
+      .updateOne(
+        { _id: new ObjectId(contactId) },
+        { $set: contact }
+      );
 
-// DELETE a contact
-async function deleteContact(req, res) {
-  try {
-    const db = getDb();
+    if (response.matchedCount === 0) {
+      return res.status(404).json({
+        error: "Contact not found."
+      });
+    }
 
-    const result = await db.collection("contacts").deleteOne({
-      _id: new ObjectId(req.params.id),
+    return res.status(204).send();
+  } catch (error) {
+    console.error("Error updating contact:", error);
+
+    return res.status(500).json({
+      error: "An error occurred while updating the contact."
     });
+  }
+};
 
-    if (result.deletedCount === 0) {
-      return res.status(404).json({
-        message: "Contact not found",
+const deleteContact = async (req, res) => {
+  try {
+    const contactId = req.params.id;
+
+    if (!ObjectId.isValid(contactId)) {
+      return res.status(400).json({
+        error: "Invalid contact ID."
       });
     }
 
-    res.status(204).send();
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    const response = await mongodb
+      .getDb()
+      .collection("contacts")
+      .deleteOne({ _id: new ObjectId(contactId) });
+
+    if (response.deletedCount === 0) {
+      return res.status(404).json({
+        error: "Contact not found."
+      });
+    }
+
+    return res.status(200).json({
+      message: "Contact deleted successfully."
+    });
+  } catch (error) {
+    console.error("Error deleting contact:", error);
+
+    return res.status(500).json({
+      error: "An error occurred while deleting the contact."
+    });
   }
-}
+};
 
 module.exports = {
-  getAllContacts,
-  getContactById,
+  getAll,
+  getSingle,
   createContact,
   updateContact,
-  deleteContact,
+  deleteContact
 };
